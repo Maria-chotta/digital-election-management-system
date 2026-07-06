@@ -1,0 +1,24 @@
+/* Simple styling for the elections page */
+:root{
+  --max-width:900px;
+  --accent:#0066cc;
+  --muted:#666;
+}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;line-height:1.4;color:#111;padding:24px;background:#f7f8fb}
+.container{max-width:var(--max-width);margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 6px 18px rgba(20,20,40,0.06)}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.voter-box{font-size:0.9rem}
+.voter-box input{padding:6px 8px;border:1px solid #ddd;border-radius:4px}
+.election{border-top:1px solid #eee;padding:12px 0}
+.election:first-of-type{border-top:0}
+.title{margin:0;font-size:1.1rem;color:var(--accent)}
+.desc{color:var(--muted);margin:6px 0}
+.candidates{margin-top:8px}
+.candidate{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:#fafafa;border-radius:6px;margin-bottom:8px}
+.candidate .meta{color:#333}
+.candidate button{background:var(--accent);color:#fff;border:0;padding:6px 10px;border-radius:6px;cursor:pointer}
+.candidate button[disabled]{opacity:0.6;cursor:not-allowed}
+.loading,.c-loading{color:var(--muted)}
+.notice{margin-top:8px;padding:8px;border-radius:6px;background:#eef9ff;color:#0a3d66}
+.error{background:#fff0f0;color:#6b0b0b}
+.results{margin-top:8px}

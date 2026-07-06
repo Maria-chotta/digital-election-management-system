@@ -1,0 +1,20 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Candidates</title>
+  <link rel="stylesheet" href="{% static 'css/elections.css' %}">
+</head>
+<body>
+  <main class="container">
+    <a href="/">← Home</a>
+    <h1>Candidates</h1>
+    <div id="candidates-root">
+      <!-- candidates list loaded by elections.js -->
+    </div>
+  </main>
+  <script src="{% static 'js/elections.js' %}" defer></script>
+</body>
+</html>

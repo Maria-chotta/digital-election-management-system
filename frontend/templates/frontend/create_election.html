@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Create Election</title>
+    <link rel="stylesheet" href="{% static 'css/elections.css' %}">
+    <style>
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; font-family: inherit; }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .btn { background: #0066cc; color: #fff; padding: 10px 20px; border: 0; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background: #0052a3; }
+        .btn-back { background: #666; }
+        .btn-back:hover { background: #555; }
+    </style>
+</head>
+<body>
+<main class="container">
+    <a href="{% url 'admin_dashboard' %}" style="margin-bottom: 20px; display: inline-block;">← Back to Dashboard</a>
+    
+    <h1>Create New Election</h1>
+    
+    <form method="POST" style="max-width: 600px;">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="title">Election Title</label>
+            <input type="text" id="title" name="title" required placeholder="e.g., Student President Election">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" required placeholder="Describe the election..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="start_date">Start Date & Time</label>
+            <input type="datetime-local" id="start_date" name="start_date" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="end_date">End Date & Time</label>
+            <input type="datetime-local" id="end_date" name="end_date" required>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn">Create Election</button>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-back" style="text-decoration: none; display: flex; align-items: center;">Cancel</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

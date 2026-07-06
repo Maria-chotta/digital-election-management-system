@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Digital Election — Home</title>
+  <link rel="stylesheet" href="{% static 'css/elections.css' %}">
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Digital Election Management</h1>
+    </header>
+
+    <section>
+      <ul>
+        <li><a href="/">Elections (single-page)</a></li>
+        <li><a href="/election/">Election detail (placeholder)</a></li>
+        <li><a href="/candidates/">Candidates (placeholder)</a></li>
+        <li><a href="/results/">Results (placeholder)</a></li>
+      </ul>
+    </section>
+  </main>
+  <script src="{% static 'js/elections.js' %}" defer></script>
+</body>
+</html>
