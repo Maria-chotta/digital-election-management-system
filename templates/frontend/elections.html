@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Elections</title>
+</head>
+<body>
+
+<h1>Election List (From API)</h1>
+
+<ul id="electionList"></ul>
+
+<script>
+fetch("/api/elections/")
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`API request failed: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        let list = document.getElementById("electionList");
+
+        if (!data || !data.length) {
+            list.innerHTML = '<li>No elections available.</li>';
+            return;
+        }
+
+        data.forEach(election => {
+            let item = document.createElement("li");
+            item.innerHTML = election.title + " - " + election.description;
+            list.appendChild(item);
+        });
+    })
+    .catch(error => {
+        console.error(error);
+        let list = document.getElementById("electionList");
+        list.innerHTML = '<li>Unable to load elections right now.</li>';
+    });
+</script>
+
+</body>
+</html>
