@@ -20,6 +20,7 @@ class Candidate(models.Model):
         related_name="candidates"
     )
     name = models.CharField(max_length=255)
+    position = models.CharField(max_length=100, default='General')
     manifesto = models.TextField()
 
     def __str__(self):
@@ -30,10 +31,16 @@ class Vote(models.Model):
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     candidate = models.ForeignKey(Candidate, on_delete=models.CASCADE)
     election = models.ForeignKey(Election, on_delete=models.CASCADE)
+    position = models.CharField(max_length=100, default='General')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('voter', 'election')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('voter', 'election', 'position'),
+                name='one_vote_per_voter_per_election_position',
+            ),
+        ]
 
     def __str__(self):
         return f"{self.voter} -> {self.candidate}"

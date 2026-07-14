@@ -16,21 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-
-from election_api.views_web import (
-    elections_page, login_view, logout_view, admin_dashboard, 
-    create_election, manage_candidates, results_page
-)
+from django.views.generic import TemplateView
 
 urlpatterns = [
-    path('', elections_page, name='elections_page'),
-    path('login/', login_view, name='login'),
-    path('logout/', logout_view, name='logout'),
-    path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
-    path('create-election/', create_election, name='create_election'),
-    path('manage-candidates/<int:election_id>/', manage_candidates, name='manage_candidates'),
-    path('results/', results_page, name='results'),
-    path('results/<int:election_id>/', results_page, name='election_results'),
+    path('', TemplateView.as_view(template_name='frontend/index.html'), name='elections_page'),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('api/', include('election_api.urls')),

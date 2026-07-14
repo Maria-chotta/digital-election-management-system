@@ -7,9 +7,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # SECURITY
 SECRET_KEY = config('SECRET_KEY')
 
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default='False').strip().lower() in {'1', 'true', 'yes', 'on'}
 
-ALLOWED_HOSTS = []  
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+    if host.strip()
+]
 
 
 # APPLICATIONS
@@ -33,6 +37,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'config.middleware.CorsMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -112,7 +117,7 @@ USE_TZ = True
 
 # STATIC FILES
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'frontend' / 'static']
+STATICFILES_DIRS = [BASE_DIR / 'frontend' / 'templates' / 'frontend']
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -124,7 +129,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # DEFAULT PRIMARY KEY
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-AUTH_USER_MODEL = 'accounts.User'
 AUTH_USER_MODEL = 'accounts.User'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'

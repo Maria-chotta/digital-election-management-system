@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main">
+  <p><a href="{% url 'admin:election_api_election_changelist' %}">← Back to elections</a></p>
+  <h1>{{ election.title }}</h1>
+  <p>{{ election.description }}</p>
+
+  {% for group in result_groups %}
+    <h2>{{ group.position }}</h2>
+    <table>
+      <thead>
+        <tr><th>Rank</th><th>Candidate</th><th>Votes</th><th>Percentage</th></tr>
+      </thead>
+      <tbody>
+        {% for candidate in group.candidates %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ candidate.name }}</td>
+            <td>{{ candidate.vote_count }}</td>
+            <td>{% widthratio candidate.vote_count group.total_votes 100 %}%</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4">No candidates.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p><strong>Total votes for {{ group.position }}:</strong> {{ group.total_votes }}</p>
+  {% empty %}
+    <p>No candidates have been added to this election yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}
