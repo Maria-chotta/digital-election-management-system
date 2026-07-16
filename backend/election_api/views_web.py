@@ -13,6 +13,7 @@ User = get_user_model()
 def login_view(request):
     """User login page."""
     if request.method == 'POST':
+        # "ID" field in the UI maps to Django's username for fast compatibility.
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
@@ -30,6 +31,7 @@ def logout_view(request):
     return redirect('login')
 
 
+@login_required(login_url='login')
 def elections_page(request):
     """Main elections page with voting interface."""
     return render(request, 'frontend/elections.html')
@@ -45,6 +47,7 @@ def admin_dashboard(request):
         'active_elections': elections.filter(is_active=True).count(),
     }
     return render(request, 'frontend/admin_dashboard.html', context)
+
 
 
 @login_required(login_url='login')
@@ -91,13 +94,14 @@ def manage_candidates(request, election_id):
             Candidate.objects.create(
                 election=election,
                 name=name,
-                manifesto=manifesto
+                position=request.POST.get('position', 'General'),
+                manifesto=manifesto,
             )
             messages.success(request, f'Candidate "{name}" added')
         
         elif action == 'delete':
             candidate_id = request.POST.get('candidate_id')
-            Candidate.objects.get(id=candidate_id).delete()
+            Candidate.objects.get(id=candidate_id, election_id=election_id).delete()
             messages.success(request, 'Candidate deleted')
         
         return redirect('manage_candidates', election_id=election_id)
@@ -138,5 +142,8 @@ def results_page(request, election_id=None):
             'total_votes': total_votes
         })
     
-    context = {'results_data': results_data}
+    context = {
+        'results_data': results_data,
+        'election_id': election_id,
+    }
     return render(request, 'frontend/results.html', context)

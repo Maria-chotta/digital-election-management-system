@@ -1,10 +1,6 @@
-# TODO - Admin-only Election Results
+- [x] Inspect DB/migration: 0009 unconditionally adds unique constraint; duplicates already exist
+- [x] Update migration 0009_fix_vote_position_schema to auto-heal duplicates before adding unique constraint (Option B)
+- [x] Run `python3 manage.py migrate` to verify migrations apply
 
-- [x] Locate results endpoints and frontend results button
-- [x] Update REST API `/api/results/<election_id>/` to require admin/staff
-- [x] Hide/disable “View Results” button in static frontend for non-admin users
-- [x] Frontend gate in static JS to block non-admin from loading results
-- [x] Verify in frontend: non-admin cannot open/load results UI and results fetch is blocked
-- [ ] Verify backend enforcement: non-admin receives 403 on `/api/results/<id>/` and admin receives 200
 
 

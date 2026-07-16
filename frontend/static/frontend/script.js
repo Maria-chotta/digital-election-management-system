@@ -4,7 +4,9 @@ console.log("SCRIPT FILE LOADED SUCCESSFULLY");
    FRONTEND JAVASCRIPT (STATIC)
 ===================================== */
 
-
+// IMPORTANT:
+// This file must live in Django static directory so that templates can load it via:
+//   {% static 'frontend/script.js' %}
 
 const API_BASE_URL = window.location.origin;
 
@@ -28,19 +30,44 @@ function setSpinner(isLoading) {
   spinner.style.display = isLoading ? 'inline-block' : 'none';
 }
 
-function setAuthMessage(message, type = 'info') {
-  const el = $('authMessage');
+function setFlashMessage(elementId, message, type = 'info') {
+  const el = $(elementId);
   if (!el) return;
   if (!message) {
     el.style.display = 'none';
     el.textContent = '';
+    el.classList.remove('error', 'success', 'info');
     return;
   }
 
   el.textContent = message;
-  el.classList.remove('success', 'error', 'info');
+  el.classList.remove('error', 'success', 'info');
   el.classList.add(type);
   el.style.display = 'block';
+}
+
+function setAuthMessage(message, type = 'info') {
+  setFlashMessage('authAlert', message, type);
+}
+
+function setVoteMessage(message, type = 'info') {
+  setFlashMessage('voteAlert', message, type);
+}
+
+function setGlobalMessage(message, type = 'info') {
+  setFlashMessage('globalAlert', message, type);
+}
+
+function showStoredFlashMessage() {
+  const raw = sessionStorage.getItem('flashMessage');
+  if (!raw) return;
+  sessionStorage.removeItem('flashMessage');
+  try {
+    const { message, type } = JSON.parse(raw);
+    if (message) setGlobalMessage(message, type || 'success');
+  } catch {
+    // ignore invalid stored message
+  }
 }
 
 function validateNonEmpty(value) {
@@ -183,19 +210,12 @@ async function registerUser() {
     });
 
     if (response.ok) {
-      setAuthMessage('Registration successful! Logging you in...', 'success');
-      // Save token and auto-login
-      const access = data?.access;
-      if (access) {
-        token = access;
-        localStorage.setItem('token', token);
-        setTimeout(() => {
-          checkAuth();
-        }, 1000);
-      } else {
-        if ($('authEmail')) $('authEmail').value = email;
-        setTimeout(() => showAuth('login'), 1000);
-      }
+      setAuthMessage('Registration successful! Please login.', 'success');
+      // Do NOT auto-login. User must enter credentials to get a token.
+      if ($('authEmail')) $('authEmail').value = email;
+      setTimeout(() => {
+        showAuth('login');
+      }, 300);
       return;
     }
 
@@ -233,11 +253,16 @@ async function login() {
       }
 
       localStorage.setItem('token', token);
-      setAuthMessage('Login successful! Redirecting...', 'success');
+      const successMsg = data?.message || 'Login successful!';
+      setAuthMessage(successMsg, 'success');
+      sessionStorage.setItem(
+        'flashMessage',
+        JSON.stringify({ message: successMsg, type: 'success' }),
+      );
 
       window.setTimeout(() => {
-        checkAuth();
-      }, 1000);
+        window.location.href = '/';
+      }, 800);
       return;
     }
 
@@ -411,69 +436,29 @@ async function loadCandidates(electionId) {
 
 
 
-    const candidates =
-      data.candidates || [];
-
-
+    const candidates = data.candidates || [];
+    const votedPositions = new Set(data.voted_positions || []);
 
     if (!candidates.length) {
-
-
-      container.innerHTML =
-        '<p class="muted">No candidates found.</p>';
-
-
+      container.innerHTML = '<p class="muted">No candidates found.</p>';
       showSection('candidates');
-
       return;
-
     }
 
+    container.innerHTML = candidates.map((c) => {
+      const alreadyVoted = votedPositions.has(c.position);
+      const voteButton = alreadyVoted
+        ? `<button class="vote-btn" type="button" disabled title="You already voted for this position">Already voted</button>`
+        : `<button class="vote-btn" type="button" data-candidate-id="${c.id}" data-election-id="${electionId}" onclick="vote(${c.id}, ${electionId}, this)">Vote</button>`;
 
-
-    container.innerHTML = candidates.map(c => `
-
-
+      return `
       <div class="card">
-
-
-        <h3>
-          ${escapeHtml(c.name)}
-        </h3>
-
-
-
-        <p>
-          <strong>Position:</strong>
-          ${escapeHtml(c.position)}
-        </p>
-
-
-
-        <p>
-          <strong>Manifesto:</strong>
-          ${escapeHtml(c.manifesto || '')}
-        </p>
-
-
-
-        <button
-          class="vote-btn"
-          onclick="vote(${c.id}, ${electionId})">
-
-          Vote
-
-        </button>
-
-
-
-      </div>
-
-
-
-    `).join('');
-
-
+        <h3>${escapeHtml(c.name)}</h3>
+        <p><strong>Position:</strong> ${escapeHtml(c.position)}</p>
+        <p><strong>Manifesto:</strong> ${escapeHtml(c.manifesto || '')}</p>
+        ${voteButton}
+      </div>`;
+    }).join('');
 
     showSection('candidates');
 
@@ -505,15 +490,25 @@ function escapeHtml(str) {
    VOTE
 =========================== */
 
-async function vote(candidateId, electionId) {
+async function vote(candidateId, electionId, buttonEl) {
   if (!token) {
     setAuthMessage('Please login first.', 'error');
-    openLogin();
+    showSection('auth-section');
+    showAuth('login');
     return;
+  }
+
+  const voteBtn = buttonEl || document.querySelector(
+    `.vote-btn[data-candidate-id="${candidateId}"][data-election-id="${electionId}"]`,
+  );
+  if (voteBtn) {
+    voteBtn.disabled = true;
+    voteBtn.textContent = 'Submitting...';
   }
 
   try {
     setSpinner(true);
+    setVoteMessage('', 'info');
 
     const { response, data } = await safeFetchJson(API.vote, {
       method: 'POST',
@@ -525,13 +520,28 @@ async function vote(candidateId, electionId) {
     });
 
     if (response.ok) {
-      setAuthMessage(data?.message || 'Vote submitted successfully!', 'success');
+      const msg = data?.message || 'Vote successful!';
+      setVoteMessage(msg, 'success');
+      if (voteBtn) {
+        voteBtn.textContent = 'Voted';
+        voteBtn.disabled = true;
+      }
+      await loadCandidates(electionId);
       return;
     }
 
-    setAuthMessage(data?.error || data?.detail || 'Vote failed.', 'error');
+    const msg = data?.error || data?.detail || 'Vote failed.';
+    setVoteMessage(msg, 'error');
+    if (voteBtn) {
+      voteBtn.disabled = false;
+      voteBtn.textContent = 'Vote';
+    }
   } catch (e) {
-    setAuthMessage('Network error while voting.', 'error');
+    setVoteMessage('Network error while voting.', 'error');
+    if (voteBtn) {
+      voteBtn.disabled = false;
+      voteBtn.textContent = 'Vote';
+    }
   } finally {
     setSpinner(false);
   }

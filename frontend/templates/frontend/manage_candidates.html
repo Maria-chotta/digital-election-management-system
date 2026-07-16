@@ -1,0 +1,81 @@
+{% extends "frontend/admin_layout.html" %}
+
+{% block content %}
+  <div class="admin-card">
+    <div class="admin-header">
+      <div>
+        <h1>Manage Candidates</h1>
+        <p><strong>{{ election.title }}</strong> — {{ election.description }}</p>
+      </div>
+      <div class="admin-actions">
+        <a class="btn-secondary" href="{% url 'admin_dashboard' %}">← Back</a>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+      <section>
+        <h3 style="color:var(--primary-color);margin-bottom:.75rem;">Add Candidate</h3>
+        <form method="post" class="form-container" style="margin:0; max-width:680px;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add" />
+
+          <div class="form-group">
+            <label for="name">Candidate Name</label>
+            <input id="name" name="name" type="text" placeholder="e.g., Amina Hassan" required />
+          </div>
+
+          <div class="form-group">
+            <label for="position">Position</label>
+            <select id="position" name="position">
+              <option value="General" selected>General</option>
+              <option value="President">President</option>
+              <option value="Vice President">Vice President</option>
+              <option value="Secretary">Secretary</option>
+              <option value="Treasurer">Treasurer</option>
+              <option value="General Secretary">General Secretary</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="manifesto">Manifesto</label>
+            <textarea id="manifesto" name="manifesto" placeholder="Why should students vote for this candidate?" required></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary" style="width:100%;">Add Candidate</button>
+        </form>
+      </section>
+
+      <aside>
+        <div class="admin-card" style="padding:1.25rem;">
+          <h3 style="color:var(--primary-color);margin-bottom:.5rem;">Existing Candidates</h3>
+          <p class="muted" style="margin-top:.25rem;">Total: <strong>{{ candidates|length }}</strong></p>
+
+          <div style="margin-top:1rem;">
+            {% for candidate in candidates %}
+              <div style="padding:.75rem;border:1px solid #eef2ff;border-radius:12px;margin-bottom:.75rem;background:#f8fafc;">
+                <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;">
+                  <div>
+                    <div style="font-weight:800;color:var(--primary-color);">{{ candidate.name }}</div>
+                    <div class="muted" style="margin-top:.25rem;">Position: <strong>{{ candidate.position }}</strong></div>
+                  </div>
+                  <div>
+                    <form method="post" style="margin:0;">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete" />
+                      <input type="hidden" name="candidate_id" value="{{ candidate.id }}" />
+                      <button type="submit" class="btn-danger" style="padding:.5rem .8rem;">Delete</button>
+                    </form>
+                  </div>
+                </div>
+                <div class="muted" style="margin-top:.5rem;line-height:1.5;">{{ candidate.manifesto|truncatechars:120 }}</div>
+              </div>
+            {% empty %}
+              <div class="muted">No candidates added yet.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+{% endblock %}
+

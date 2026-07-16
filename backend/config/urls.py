@@ -17,10 +17,41 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import TemplateView
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+
+from election_api.views_web import (
+    results_page,
+    admin_dashboard,
+    create_election,
+    manage_candidates,
+    login_view,
+    logout_view,
+)
+
 
 urlpatterns = [
     path('', TemplateView.as_view(template_name='frontend/index.html'), name='elections_page'),
     path('admin/', admin.site.urls),
+    # Authentication (web pages)
+    path('accounts/login/', login_view, name='login'),
+    path('accounts/logout/', logout_view, name='logout'),
     path('accounts/', include('accounts.urls')),
     path('api/', include('election_api.urls')),
+
+
+    # Web pages
+    path('admin/elections/', admin_dashboard, name='admin_dashboard'),
+    path('admin/elections/create/', create_election, name='create_election'),
+    path('admin/elections/<int:election_id>/candidates/', manage_candidates, name='manage_candidates'),
+
+    # Web page to view results (renders frontend/templates/frontend/results.html)
+    path('results/<int:election_id>/', results_page, name='results_page'),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
+
+
+

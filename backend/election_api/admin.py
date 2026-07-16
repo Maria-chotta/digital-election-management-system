@@ -69,11 +69,18 @@ class CandidateAdmin(admin.ModelAdmin):
 
 @admin.register(Vote)
 class VoteAdmin(admin.ModelAdmin):
+    # Note: Vote model currently does NOT have a `position` field.
+    # Position is derived from the related Candidate.
     list_display = ('voter_name', 'voter_email', 'candidate', 'position', 'election', 'created_at')
-    list_filter = ('election', 'position', 'created_at')
+    list_filter = ('election', 'created_at')
     search_fields = ('voter__username', 'voter__email', 'voter__first_name', 'voter__last_name', 'candidate__name')
     ordering = ('-created_at',)
-    readonly_fields = ('voter', 'candidate', 'election', 'position', 'created_at')
+    readonly_fields = ('voter', 'candidate', 'election', 'created_at')
+
+    @admin.display(description='Position')
+    def position(self, obj):
+        return obj.candidate.position
+
 
     @admin.display(description='Voter')
     def voter_name(self, vote):

@@ -24,12 +24,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'accounts', 
+    'accounts',
     'rest_framework',
     'api',
     'election_api',
-    'rest_framework.authtoken',
 ]
+
 
 
 # MIDDLEWARE
@@ -45,7 +45,7 @@ MIDDLEWARE = [
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -117,7 +117,7 @@ USE_TZ = True
 
 # STATIC FILES
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'frontend' / 'templates' / 'frontend']
+STATICFILES_DIRS = [BASE_DIR / 'frontend' / 'static']
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 

@@ -1,0 +1,74 @@
+{% extends "frontend/admin_layout.html" %}
+
+{% block content %}
+  <div class="admin-card">
+    <div class="admin-header">
+      <div>
+        <h1>Election Admin Dashboard</h1>
+        <p>Create elections and manage candidates. Voting access is handled by the backend rules.</p>
+      </div>
+      <div class="admin-actions">
+        <a class="btn-primary" href="{% url 'create_election' %}">+ Create Election</a>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+      <section>
+        <h3 style="color:var(--primary-color);margin-bottom:.75rem;">Your Elections</h3>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Status</th>
+              <th>Dates</th>
+              <th style="text-align:right;">Candidates</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for election in elections %}
+            <tr>
+              <td>
+                <strong>{{ election.title }}</strong>
+                <div class="muted" style="margin-top:.25rem;">{{ election.description|truncatechars:80 }}</div>
+              </td>
+              <td>
+                {% if election.is_active %}
+                  <span class="badge">Active</span>
+                {% else %}
+                  <span class="badge" style="background:#fef3c7;color:#92400e;">Inactive</span>
+                {% endif %}
+                {% if election.results_published %}
+                  <div class="muted" style="margin-top:.35rem;">✅ Results published</div>
+                {% endif %}
+              </td>
+              <td class="muted">
+                <div>Start: {{ election.start_date|date:"Y-m-d H:i" }}</div>
+                <div>End: {{ election.end_date|date:"Y-m-d H:i" }}</div>
+              </td>
+              <td style="text-align:right;">
+                <a class="btn-secondary" href="{% url 'manage_candidates' election.id %}">Manage</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="muted">No elections yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      <aside>
+        <div class="admin-card" style="padding:1.25rem;">
+          <h3 style="color:var(--primary-color);margin-bottom:.5rem;">Stats</h3>
+          <p class="muted">Total elections: <strong>{{ total_elections }}</strong></p>
+          <p class="muted">Active elections: <strong>{{ active_elections }}</strong></p>
+          <hr style="border:0;border-top:1px solid #eef2ff;margin:1rem 0;" />
+          <p class="muted" style="line-height:1.8;">
+            Tip: Add candidates before the voting period begins.
+            Results will be shown only after voting ends and admin publishes them.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+{% endblock %}
+

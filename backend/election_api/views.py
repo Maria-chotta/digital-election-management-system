@@ -4,29 +4,64 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+
 from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 from .models import Election, Candidate, Vote
 from .serializers import ElectionSerializer
 
 
-def user_response(user):
-    token, _ = Token.objects.get_or_create(user=user)
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def publish_results(request, election_id: int):
+    """Admin endpoint to mark results as published for an election."""
+    try:
+        election = Election.objects.get(id=election_id)
+    except Election.DoesNotExist:
+        return Response({"error": "Election not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    election.results_published = True
+    election.results_published_at = timezone.now()
+    election.save(update_fields=["results_published", "results_published_at"])
+
+    return Response({"message": "Results published successfully"}, status=status.HTTP_200_OK)
+
+
+
+def user_response(user, message='Login successful!'):
+    refresh = RefreshToken.for_user(user)
     return {
-        'token': token.key,
+        'access': str(refresh.access_token),
+        'refresh': str(refresh),
         'id': user.pk,
         'name': user.get_full_name() or user.get_username(),
         'email': user.email,
+        'message': message,
     }
+
+
+
+def _voting_is_open(election: Election) -> bool:
+    now = timezone.now()
+    return election.is_active and (election.start_date <= now) and (now <= election.end_date)
+
+
+def _voting_has_ended(election: Election) -> bool:
+    now = timezone.now()
+    return now > election.end_date
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register_api(request):
+
     """Create a voter account without requiring staff access."""
     full_name = str(request.data.get('name', '')).strip()
     email = str(request.data.get('email', '')).strip().lower()
@@ -68,13 +103,16 @@ def register_api(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    return Response(user_response(user), status=status.HTTP_201_CREATED)
+    return Response(
+        user_response(user, message='Registration successful!'),
+        status=status.HTTP_201_CREATED,
+    )
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_api(request):
-    """Authenticate a voter and return a token for the voting API."""
+    """Authenticate a voter and return JWT tokens for the voting API."""
     email = str(request.data.get('email', '')).strip()
     password = request.data.get('password', '')
 
@@ -106,15 +144,57 @@ def login_api(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAdminUser])
+@permission_classes([AllowAny])
+def election_candidates(request, election_id: int):
+    """Return candidates for an election."""
+    try:
+        election = Election.objects.get(id=election_id)
+    except Election.DoesNotExist:
+        return Response({"error": "Election not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    candidates = Candidate.objects.filter(election=election)
+    results = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "position": c.position,
+            "manifesto": c.manifesto,
+        }
+        for c in candidates
+    ]
+
+    voted_positions = []
+    if request.user.is_authenticated:
+        voted_positions = list(
+            Vote.objects.filter(voter=request.user, election=election)
+            .values_list('position', flat=True)
+            .distinct()
+        )
+
+    return Response({
+        "election_id": election.id,
+        "election_title": election.title,
+        "candidates": results,
+        "voted_positions": voted_positions,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def election_results(request, election_id):
-    # Only Django staff/admin users can access election results.
-    # Non-admin users receive 403 Forbidden automatically.
+    """Return election results only after the voting period ends AND admin publishes them."""
+
 
     try:
         election = Election.objects.get(id=election_id)
     except Election.DoesNotExist:
         return Response({"error": "Election not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not _voting_has_ended(election):
+        return Response({"error": "Results are not available yet. Voting is still ongoing."}, status=status.HTTP_403_FORBIDDEN)
+
+    if not election.results_published:
+        return Response({"error": "Results are not published by admin yet."}, status=status.HTTP_403_FORBIDDEN)
 
     candidates = Candidate.objects.filter(election=election)
     results = []
@@ -135,6 +215,7 @@ def election_results(request, election_id):
     })
 
 
+
 # GET elections
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -152,6 +233,15 @@ def cast_vote(request):
     candidate_id = request.data.get('candidate')
     election_id = request.data.get('election')
 
+    try:
+        election = Election.objects.get(id=election_id)
+    except Election.DoesNotExist:
+        return Response({"error": "Election not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not _voting_is_open(election):
+        return Response({"error": "Voting is not open for this election."}, status=status.HTTP_403_FORBIDDEN)
+
+
     if not candidate_id or not election_id:
         return Response({"error": "candidate and election are required"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -166,21 +256,52 @@ def cast_vote(request):
             status=status.HTTP_404_NOT_FOUND,
         )
 
+    # Strong server-side prevention: check existing vote before creating.
+    already_voted = Vote.objects.filter(
+        voter=voter,
+        election=election,
+        position=candidate.position,
+    ).exists()
+
+
+    if already_voted:
+        return Response(
+            {
+                "error": (
+                    f"You have already voted for {candidate.position} in this election. "
+                    "You can only vote once per position."
+                ),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     try:
         with transaction.atomic():
             vote = Vote.objects.create(
                 voter=voter,
                 candidate=candidate,
-                election_id=election_id,
+                election=election,
                 position=candidate.position,
             )
     except IntegrityError:
+        # Fallback in case of race-condition; DB constraint remains the final guard.
         return Response(
-            {"error": f"You already voted for {candidate.position}"},
+            {
+                "error": (
+                    f"You have already voted for {candidate.position} in this election. "
+                    "You can only vote once per position."
+                ),
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    return Response({
-        "message": "Vote submitted successfully",
-        "vote_id": vote.id
-    }, status=status.HTTP_201_CREATED)
+    return Response(
+        {
+            "message": f"Vote successful! You voted for {candidate.name} ({candidate.position}).",
+            "candidate_name": candidate.name,
+            "candidate_position": candidate.position,
+            "vote_id": vote.id,
+        },
+        status=status.HTTP_201_CREATED,
+    )
+

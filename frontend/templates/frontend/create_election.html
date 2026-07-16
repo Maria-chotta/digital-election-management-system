@@ -1,0 +1,43 @@
+{% extends "frontend/admin_layout.html" %}
+
+{% block content %}
+  <div class="admin-card">
+    <div class="admin-header">
+      <div>
+        <h1>Create Election</h1>
+        <p>Set voting dates. Marking results as published is done after voting ends.</p>
+      </div>
+      <div class="admin-actions">
+        <a class="btn-secondary" href="{% url 'admin_dashboard' %}">← Back</a>
+      </div>
+    </div>
+
+    <form method="post" class="form-container" style="margin:0; max-width:640px;">
+      {% csrf_token %}
+      <h2 style="margin-top:0;">Election Details</h2>
+
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input id="title" name="title" type="text" placeholder="e.g., Student President Election" required />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" placeholder="Short description" style="width:100%;" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="start_date">Start date</label>
+        <input id="start_date" name="start_date" type="datetime-local" required />
+      </div>
+
+      <div class="form-group">
+        <label for="end_date">End date</label>
+        <input id="end_date" name="end_date" type="datetime-local" required />
+      </div>
+
+      <button type="submit" class="btn-primary" style="width:100%;">Create Election</button>
+    </form>
+  </div>
+{% endblock %}
+

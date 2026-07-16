@@ -1,0 +1,241 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login / Register</title>
+    <link rel="stylesheet" href="{% static 'frontend/styles.css' %}">
+    <style>
+        .auth-shell{
+            max-width: 520px;
+            margin: 2.25rem auto;
+        }
+        .auth-tabs{
+            display:flex;
+            gap:10px;
+            margin-bottom: 1.25rem;
+            justify-content:center;
+        }
+        .tab-btn{
+            flex:1;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid #dbe4f0;
+            background: #fff;
+            color:#0b3d91;
+            cursor:pointer;
+            font-weight:600;
+        }
+        .tab-btn.active{
+            border-color:#0b3d91;
+            background:#0b3d91;
+            color:#fff;
+        }
+        .form-card{
+            background:white;
+            border-radius: 16px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            padding: 1.5rem;
+        }
+        .form-grid input{
+            width:100%;
+            padding: 12px;
+            border:1px solid #d1d5db;
+            border-radius: 10px;
+            outline:none;
+            margin-bottom: 12px;
+        }
+        .form-grid input:focus{
+            border-color:#0b3d91;
+        }
+        .alert{
+            margin-bottom: 1rem;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background:#fee2e2;
+            color:#991b1b;
+            display:none;
+        }
+        .success{
+            background:#dcfce7;
+            color:#166534;
+        }
+        .auth-meta{
+            margin-top: 1rem;
+            color:#6b7280;
+            text-align:center;
+            font-size: 14px;
+        }
+        .row-btn{
+            display:flex;
+            gap:12px;
+        }
+        .row-btn .primary-btn{
+            width:100%;
+        }
+        .small-link{
+            margin-top:10px;
+            text-align:center;
+            font-size: 14px;
+            color:#0b3d91;
+            cursor:pointer;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <section class="section active">
+            <div class="auth-shell">
+                <div class="auth-tabs">
+                    <button id="tabLogin" class="tab-btn active" onclick="showAuth('login')">Login</button>
+                    <button id="tabRegister" class="tab-btn" onclick="showAuth('register')">Register</button>
+                </div>
+
+                <div id="authAlert" class="alert" role="alert"></div>
+
+                <!-- LOGIN FORM -->
+                <div id="loginPanel" class="form-card">
+                    <h2 style="margin-bottom: 1rem;">Login</h2>
+
+                    <div class="form-grid">
+                        <label style="display:block; margin-bottom:6px; font-weight:600;">Email</label>
+                        <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
+
+                        <label style="display:block; margin-bottom:6px; font-weight:600;">Password</label>
+                        <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" required />
+                    </div>
+
+                    <div class="row-btn" style="margin-top:8px;">
+                        <button class="primary-btn" type="button" onclick="loginViaApi()">Login</button>
+                    </div>
+
+                    <div class="auth-meta">Use the same email you registered with.</div>
+                </div>
+
+                <!-- REGISTER FORM -->
+                <div id="registerPanel" class="form-card" style="display:none;">
+                    <h2 style="margin-bottom: 1rem;">Register</h2>
+
+                    <div class="form-grid">
+                        <label style="display:block; margin-bottom:6px; font-weight:600;">Full name</label>
+                        <input id="registerName" type="text" placeholder="John Doe" autocomplete="name" required />
+
+                        <label style="display:block; margin-bottom:6px; font-weight:600;">Email</label>
+                        <input id="registerEmail" type="email" placeholder="you@example.com" autocomplete="email" required />
+
+                        <label style="display:block; margin-bottom:6px; font-weight:600;">Password</label>
+                        <input id="registerPassword" type="password" placeholder="Password" autocomplete="new-password" required />
+                    </div>
+
+                    <div class="row-btn" style="margin-top:8px;">
+                        <button class="primary-btn" type="button" onclick="registerViaApi()">Create account</button>
+                    </div>
+
+                    <div class="auth-meta">Account will be created as <b>VOTER</b>.</div>
+                </div>
+
+                <div class="small-link" onclick="window.location.href='/'">Back to home</div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:8000";
+        const API = {
+            register: `${API_BASE_URL}/api/auth/register/`,
+            login: `${API_BASE_URL}/api/auth/login/`,
+        };
+
+        function showAuth(which){
+            const loginPanel = document.getElementById('loginPanel');
+            const registerPanel = document.getElementById('registerPanel');
+            const tabLogin = document.getElementById('tabLogin');
+            const tabRegister = document.getElementById('tabRegister');
+
+            document.getElementById('authAlert').style.display = 'none';
+
+            if(which === 'register'){
+                loginPanel.style.display = 'none';
+                registerPanel.style.display = 'block';
+                tabLogin.classList.remove('active');
+                tabRegister.classList.add('active');
+            }else{
+                registerPanel.style.display = 'none';
+                loginPanel.style.display = 'block';
+                tabRegister.classList.remove('active');
+                tabLogin.classList.add('active');
+            }
+        }
+
+        function showAlert(message, isSuccess=false){
+            const alert = document.getElementById('authAlert');
+            alert.textContent = message;
+            alert.classList.toggle('success', isSuccess);
+            alert.style.display = 'block';
+        }
+
+        async function registerViaApi(){
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            showAlert('');
+            try{
+                const response = await fetch(API.register,{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({name, email, password})
+                });
+                const data = await response.json();
+
+                if(response.ok){
+                    showAlert(data.name ? 'Registration successful!' : 'Registration successful!', true);
+                    // switch to login and prefill email
+                    document.getElementById('loginEmail').value = email;
+                    showAuth('login');
+                }else{
+                    showAlert(data.error || 'Registration failed');
+                }
+            }catch(e){
+                showAlert('Network error while registering');
+                console.log(e);
+            }
+        }
+
+        async function loginViaApi(){
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if(!email || !password){
+                showAlert('Email and password are required');
+                return;
+            }
+
+            try{
+                const response = await fetch(API.login,{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({email, password})
+                });
+                const data = await response.json();
+
+                if(response.ok){
+                    console.log('LOGIN OK RESPONSE:', data);
+                    localStorage.setItem('token', data.access);
+                    window.location.href = '/';
+                }else{
+                    console.log('LOGIN FAILED STATUS:', response.status, 'DATA:', data);
+
+                    showAlert(data.error || 'Login failed');
+                }
+            }catch(e){
+                showAlert('Network error while logging in');
+                console.log(e);
+            }
+        }
+    </script>
+</body>
+</html>
+
+

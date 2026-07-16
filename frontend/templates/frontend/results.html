@@ -1,0 +1,124 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Election Results</title>
+    <link rel="stylesheet" href="{% static 'frontend/styles.css' %}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="logo">🎓 Digital University Election</h1>
+            <ul class="nav-menu">
+                <li><a href="#" onclick="history.back(); return false;">Back</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="section active">
+            <div class="voting-container">
+                <h2>Election Results</h2>
+                <p class="voting-instruction">Results are shown after voting ends and admin publishes them.</p>
+
+                <div id="resultsContainer"></div>
+                <div id="resultsError" style="display:none; margin-top: 1rem; color:#b91c1c;"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Page-specific config
+        const API_BASE_URL = window.location.origin;
+        const ELECTION_ID = {{ election_id }};
+        const RESULTS_URL = API_BASE_URL + '/api/results/' + ELECTION_ID + '/';
+    </script>
+
+    <script>
+        function renderResults(candidates, totalVotes) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+
+            if (!candidates || candidates.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:#6b7280;">No results available yet.</p>';
+                return;
+            }
+
+            const sortedCandidates = candidates.slice().sort((a, b) => (b.votes || 0) - (a.votes || 0));
+
+            sortedCandidates.forEach(function(candidate, index) {
+                const votes = candidate.votes || 0;
+                const percentage = totalVotes > 0 ? (votes / totalVotes * 100).toFixed(1) : 0;
+
+                const resultCard = document.createElement('div');
+                resultCard.className = 'result-card';
+                resultCard.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary-color);">#${index + 1}</div>
+                        <div>
+                            <div class="result-candidate-name">${candidate.name}</div>
+                            <div class="result-party">${candidate.party || 'Candidate'}</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${percentage}%;">${percentage}%</div>
+                    </div>
+                    <div class="vote-count">${votes} votes</div>
+                `;
+                container.appendChild(resultCard);
+            });
+
+            const totalDiv = document.createElement('div');
+            totalDiv.innerHTML = `
+                <div style="text-align: center; margin-top: 2rem; padding: 1rem; 
+                            background: #f0f9ff; border-radius: 8px;">
+                    <strong style="font-size: 1.1rem;">Total Votes Cast: ${totalVotes}</strong>
+                </div>
+            `;
+            container.appendChild(totalDiv);
+        }
+
+        async function loadResults() {
+            const container = document.getElementById('resultsContainer');
+            const errEl = document.getElementById('resultsError');
+            try {
+                container.innerHTML = '';
+                errEl.style.display = 'none';
+
+                const response = await fetch(RESULTS_URL);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const msg = data && data.error ? data.error : 'Unable to load results.';
+                    errEl.textContent = msg;
+                    errEl.style.display = 'block';
+                    container.innerHTML = '';
+                    return;
+                }
+
+                const results = data.results || [];
+                const candidates = results.map(r => ({
+                    id: r.candidate_id,
+                    name: r.candidate_name,
+                    position: r.position,
+                    party: r.position,
+                    votes: r.vote_count,
+                    manifesto: ''
+                }));
+
+                const totalVotes = candidates.reduce((sum, c) => sum + (c.votes || 0), 0);
+                renderResults(candidates, totalVotes);
+            } catch (e) {
+                errEl.textContent = 'Network error while loading results.';
+                errEl.style.display = 'block';
+                container.innerHTML = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadResults);
+    </script>
+</body>
+</html>
+
