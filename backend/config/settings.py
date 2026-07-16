@@ -4,14 +4,23 @@ from decouple import config
 # Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+
 # SECURITY
 SECRET_KEY = config('SECRET_KEY')
 
-DEBUG = config('DEBUG', default='False').strip().lower() in {'1', 'true', 'yes', 'on'}
+DEBUG = config('DEBUG', default='False').strip().lower() in {
+    '1',
+    'true',
+    'yes',
+    'on'
+}
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+    for host in config(
+        'ALLOWED_HOSTS',
+        default='localhost,127.0.0.1'
+    ).split(',')
     if host.strip()
 ]
 
@@ -24,12 +33,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Local apps
     'accounts',
-    'rest_framework',
     'api',
     'election_api',
-]
 
+    # Third party
+    'rest_framework',
+]
 
 
 # MIDDLEWARE
@@ -37,21 +49,32 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+
     'config.middleware.CorsMiddleware',
+
     'django.middleware.csrf.CsrfViewMiddleware',
+
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+
     'django.contrib.messages.middleware.MessageMiddleware',
+
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+
+# REST FRAMEWORK
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
 
+
+# URL CONFIGURATION
 ROOT_URLCONF = 'config.urls'
 
 
@@ -59,12 +82,20 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'frontend' / 'templates'],
+
+        # FIXED PATH FOR YOUR PROJECT
+        'DIRS': [
+            BASE_DIR / 'docs' / 'templates'
+        ],
+
         'APP_DIRS': True,
+
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
+
                 'django.contrib.auth.context_processors.auth',
+
                 'django.contrib.messages.context_processors.messages',
             ],
         },
@@ -72,6 +103,7 @@ TEMPLATES = [
 ]
 
 
+# WSGI
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
@@ -79,11 +111,22 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
+
         'NAME': config('DB_NAME'),
+
         'USER': config('DB_USER'),
+
         'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
+
+        'HOST': config(
+            'DB_HOST',
+            default='localhost'
+        ),
+
+        'PORT': config(
+            'DB_PORT',
+            default='5432'
+        ),
     }
 }
 
@@ -91,16 +134,23 @@ DATABASES = {
 # PASSWORD VALIDATION
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME':
+        'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
+
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME':
+        'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
+
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME':
+        'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
+
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME':
+        'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
 
@@ -116,19 +166,31 @@ USE_TZ = True
 
 
 # STATIC FILES
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / 'frontend' / 'static']
+STATIC_URL = '/static/'
+
+# FIXED PATH
+STATICFILES_DIRS = [
+    BASE_DIR / 'docs' / 'static'
+]
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
-# MEDIA FILES (for candidate photos later)
+# MEDIA FILES
 MEDIA_URL = '/media/'
+
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # DEFAULT PRIMARY KEY
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# CUSTOM USER MODEL
 AUTH_USER_MODEL = 'accounts.User'
+
+
+# LOGIN
 LOGIN_REDIRECT_URL = '/'
+
 LOGOUT_REDIRECT_URL = '/accounts/login/'
